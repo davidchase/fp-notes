@@ -33,9 +33,9 @@ const f = compose(map(inc), filter(odd), take(3));
 // to pass to a single "looping" mechanism
 
 // what if we redefined those functions in terms of... let say reduce
-const mapβ = curry((fn, combineFn) => (acc, input) => combineFn(acc, fn(input)));
-const filterβ = curry((pred, combineFn) => (acc, input) => pred(input) ? combineFn(acc, input) : acc);
-const takeβ = curry((n, combineFn) => (acc, input) => acc.length !== n ? combineFn(acc, input) : acc);
+const mapβ = fn => combineFn => (acc, input) => combineFn(acc, fn(input));
+const filterβ = pred => combineFn => (acc, input) => pred(input) ? combineFn(acc, input) : acc;
+const takeβ = n => combineFn => (acc, input) => acc.length !== n ? combineFn(acc, input) : acc;
 
 // each of these functions redefined in terms of reduce have some new parts
 // - combineFn is also the accumulation function IOW it is the way the values get accumulated ie: concat for lists and add for numbers, etc
