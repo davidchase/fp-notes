@@ -487,39 +487,39 @@ only &ldquo;loop&rdquo; through the data structure once.</p>
 <p>However if we re-define those functions in terms of something like <code>reduce</code> we may achieve the results
 we want.</p>
 
-<div><pre><code class="language-javascript">const mapβ = (fn, xs) =&gt; reduce((acc, input) =&gt; concat(acc, fn(input)), [], xs);
-const filterβ = (pred, xs) =&gt; reduce((acc, input) =&gt; pred(input) ? concat(acc, pred(input)) : acc, [], xs);
-const takeβ = (n, xs) =&gt; reduce((acc, input) =&gt; acc.length !== n ? concat(acc, input) : acc, [], xs);</code></pre></div>
+<div><pre><code class="language-javascript">const mapƒ = (fn, xs) =&gt; reduce((acc, input) =&gt; concat(acc, fn(input)), [], xs);
+const filterƒ = (pred, xs) =&gt; reduce((acc, input) =&gt; pred(input) ? concat(acc, pred(input)) : acc, [], xs);
+const takeƒ = (n, xs) =&gt; reduce((acc, input) =&gt; acc.length !== n ? concat(acc, input) : acc, [], xs);</code></pre></div>
 
 <p>This 1st pass shows that we are internally dependent on <code>reduce</code> and <code>concat</code> which we use to accumulate the values. This current situation does not allow us to be flexible in our usage of these new functions. IOW we cannot start with a list of values and return a single value ie: <code>[1,2,3,4] =&gt; 10</code> </p>
 
-<div><pre><code class="language-javascript">const mapβ = (fn, combineFn) =&gt; (acc, input) =&gt; combineFn(acc, fn(input));
-const filterβ = (pred, combineFn) =&gt; (acc, input) =&gt; pred(input) ? combineFn(acc, input) : acc;
-const takeβ = (n, combineFn) =&gt; (acc, input) =&gt; acc.length !== n ? combineFn(acc, input) : acc;
+<div><pre><code class="language-javascript">const mapƒ = (fn, combineFn) =&gt; (acc, input) =&gt; combineFn(acc, fn(input));
+const filterƒ = (pred, combineFn) =&gt; (acc, input) =&gt; pred(input) ? combineFn(acc, input) : acc;
+const takeƒ = (n, combineFn) =&gt; (acc, input) =&gt; acc.length !== n ? combineFn(acc, input) : acc;
 </code></pre></div>
 
 <p>In this 2nd attempt we have removed the dependency on a internal <code>reduce</code> function as well as a way to accumulate the values. It is now an argument called <code>combineFn</code>. So now we have 3 new functions that
 have a way to accumulate values and a reducing function with the signature <code>(acc, input)</code> which is the same as the 1st argument to reduce.</p>
 
-<div><pre><code class="language-javascript">reduce(mapβ(add(10), concat), [], range(1, 5)); // [11, 12, 13, 14]</code></pre></div>
+<div><pre><code class="language-javascript">reduce(mapƒ(add(10), concat), [], range(1, 5)); // [11, 12, 13, 14]</code></pre></div>
 
 <p>Above we have a typical usage of the newly created <code>mapβ</code> using <code>concat</code> as the <code>combineFn</code></p>
 
-<div><pre><code class="language-javascript">reduce(mapβ(inc, add), 0, range(1, 5)); // 14</code></pre></div>
+<div><pre><code class="language-javascript">reduce(mapƒ(inc, add), 0, range(1, 5)); // 14</code></pre></div>
 
 <p>In this example we use <code>add</code> as the accumulator (combineFn).</p>
 
-<div><pre><code class="language-javascript">reduce(mapβ(inc, filterβ(odd, takeβ(3, concat))), [], range(1, 10)); // [3, 5, 7]</code></pre></div>
+<div><pre><code class="language-javascript">reduce(mapƒ(inc, filterƒ(odd, takeƒ(3, concat))), [], range(1, 10)); // [3, 5, 7]</code></pre></div>
 
 <p>Finally we can create a function &ldquo;composition&rdquo; with all of the new functions as well as a way to accumulate values. We get the same results as the example at the beginning of this section&hellip; but with a single &ldquo;loop&rdquo; and no intermediate data structures</p>
 
 <p><em>Bonus:</em></p>
 
-<div><pre><code class="language-javascript">const mapβ = curryN(2, (fn, combineFn) =&gt; (acc, input) =&gt; combineFn(acc, fn(input)));
-const filterβ = curryN(2, (pred, combineFn) =&gt; (acc, input) =&gt; pred(input) ? combineFn(acc, input) : acc);
-const takeβ = curryN(2, (n, combineFn) =&gt; (acc, input) =&gt; acc.length !== n ? combineFn(acc, input) : acc);
+<div><pre><code class="language-javascript">const mapƒ = curryN(2, (fn, combineFn) =&gt; (acc, input) =&gt; combineFn(acc, fn(input)));
+const filterƒ = curryN(2, (pred, combineFn) =&gt; (acc, input) =&gt; pred(input) ? combineFn(acc, input) : acc);
+const takeƒ = curryN(2, (n, combineFn) =&gt; (acc, input) =&gt; acc.length !== n ? combineFn(acc, input) : acc);
 
-const ƒ = compose(mapβ(inc), filterβ(x =&gt; x % 2 !== 0), takeβ(3));
+const ƒ = compose(mapƒ(inc), filterƒ(x =&gt; x % 2 !== 0), takeƒ(3));
 
 reduce(ƒ(concat), [], range(1, 10)) // [3, 5, 7]</code></pre></div>
 
