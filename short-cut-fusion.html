@@ -523,13 +523,13 @@ const ƒ = compose(mapβ(inc), filterβ(x =&gt; x % 2 !== 0), takeβ(3));
 
 reduce(ƒ(concat), [], range(1, 10)) // [3, 5, 7]</code></pre></div>
 
-<p>As a bonus using <code>curryN</code> and <code>compose</code> from a library like <a href="http://ramdajs.com" target="_blank">ramda</a>. We can create nice reusable compositions for our <code>reduce</code> function. <strong>NB</strong> typical composition is right-left but in our case the functions get applied left-right (map gets called 1st).</p>
+<p>As a bonus using <code>curryN</code> and <code>compose</code> from a library like <a href="http://ramdajs.com" >ramda</a>. We can create nice reusable compositions for our <code>reduce</code> function. <strong>NB</strong> typical composition is right-left but in our case the functions get applied left-right (map gets called 1st).</p>
 
 <h4 id="toc_3">References</h4>
 
 <ul>
-<li><a href="https://wiki.haskell.org/Short_cut_fusion" target="_blank">https://wiki.haskell.org/Short<em>cut</em>fusion</a></li>
-<li><a href="http://www.slideshare.net/drboolean/millionways" target="_blank">http://www.slideshare.net/drboolean/millionways</a></li>
+<li><a href="https://wiki.haskell.org/Short_cut_fusion" >https://wiki.haskell.org/Short<em>cut</em>fusion</a></li>
+<li><a href="http://www.slideshare.net/drboolean/millionways">http://www.slideshare.net/drboolean/millionways</a></li>
 </ul>
 
 
