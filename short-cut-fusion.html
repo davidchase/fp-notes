@@ -446,6 +446,8 @@ pre[class*="language-"] {
 
 <div><pre><code class="language-javascript">const list = [1,2,3,4];
 
+
+//|- [12, 18, 24, 30] &lt;-- [4, 6, 8, 10] &lt;-- [2, 3, 4, 5] &lt;-- [1, 2, 3, 4]
 const f = compose(map(triple), map(double), map(inc));
 
 f(list); // [12, 18, 24, 30]</code></pre></div>
@@ -454,7 +456,8 @@ f(list); // [12, 18, 24, 30]</code></pre></div>
 given data <code>list</code>. For each of those function calls <code>map</code> creates a new list and passes it on
 to the next <code>map(f)</code>. Seems a bit wasteful :(</p>
 
-<div><pre><code class="language-javascript">const ƒ = map(compose(triple, double, inc));
+<div><pre><code class="language-javascript">//|- [12, 18, 24, 30] &lt;------------------ [1, 2, 3, 4]
+const ƒ = map(compose(triple, double, inc));
 
 ƒ(list); // [12, 18, 24, 30]</code></pre></div>
 
