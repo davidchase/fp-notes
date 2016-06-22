@@ -440,8 +440,11 @@ pre[class*="language-"] {
 
 <h3 id="toc_1">Backstory</h3>
 
-<p>While working on a JavaScript application with a few colleagues using a great functional library called <a href="http://ramdajs.com/">Ramda</a>.<br>
-We decided to refactor a small function:</p>
+<p>While working on a JavaScript application with a few colleagues using a great functional library called <a href="http://ramdajs.com/">Ramda</a>.</p>
+
+<p>We came across a function that was in need of a bit of refactoring.</p>
+
+<p><strong>NB</strong> The following code examples are written in concise es6 format.</p>
 
 <blockquote>
 <p>Original</p>
@@ -451,19 +454,11 @@ We decided to refactor a small function:</p>
 const listURLs = [&#39;http://google.com&#39;, &#39;http://ramdajs.com&#39;];
 const urlInList = url =&gt; any(val =&gt; contains(val, url))(listURLs);
 
-urlInList(&#39;http://google.com/images/bill+murray&#39;); // true</code></pre></div>
+urlInList(&#39;http://google.com/images/bill+murray&#39;); //true</code></pre></div>
 
-<p>The example simply checks to see if a given URL string exists within a given list of URL strings.</p>
+<p>The code simply checks if <code>any</code> provided URL string is contained within the given list of URL strings.</p>
 
-<p>However its a bit &ldquo;hairy&rdquo;: <code>listURLS</code> is a <a href="https://wiki.haskell.org/Free_variable">free variable</a> and there is a little bit of noise with arguments.</p>
-
-<p><strong>Sidebar</strong></p>
-
-<blockquote>
-<p>there is a little bit of noise with arguments.</p>
-</blockquote>
-
-<p>In the above definition we are focusing on the specific mechanics rather than composing functions together.</p>
+<p>So why refactor? Well, in the above definition we are focusing on the specific mechanics rather than composing functions together.</p>
 
 <p>High-level composition can promote a more compact and clear picture of what a function is going to do.</p>
 
@@ -477,17 +472,17 @@ urlInList(&#39;http://google.com/images/bill+murray&#39;); // true</code></pre><
 const listURLs = [&#39;http://google.com&#39;, &#39;http://ramdajs.com&#39;];
 const urlInList = useWith(any, [flip(contains), identity]);
 
-urlInList(&#39;http://google.com/images/bill+murray&#39;, listURLs); // true</code></pre></div>
+urlInList(&#39;http://google.com/images/bill+murray&#39;, listURLs); //true</code></pre></div>
 
 <p>Can you spot the discrepancy?</p>
 
 <ul>
 <li>Other than new functions, there is no longer mention of <code>url</code> or <code>val</code> arguments in the function definition.</li>
-<li><code>listURLs</code> is no longer a free variable since we pass it in as an argument.<br></li>
-<li>so now <code>urlInList</code> is now a binary function or a function that accepts two arguments: a string and a list of strings.</li>
+<li><code>listURLs</code> is no longer a <a href="https://wiki.haskell.org/Free_variable">free variable</a> since we pass it in as an argument.<br></li>
+<li><code>urlInList</code> is now a function that accepts two arguments: a string and a list of strings.</li>
 </ul>
 
-<p>However the key facilitator of the refactor is the <code>useWith</code> function. Below is the definition from the <a href="http://ramdajs.com/docs/#useWith">source</a></p>
+<p>The key function to take note of is <code>useWith</code>. Below is the definition from the <a href="http://ramdajs.com/docs/#useWith">source</a></p>
 
 <blockquote>
 <p>useWith: accepts a function fn and a list of transformer functions and returns a new curried function. When the new function is invoked, it calls the function fn with parameters consisting of the result of calling each supplied handler on successive arguments to the new function.</p>
@@ -496,31 +491,31 @@ urlInList(&#39;http://google.com/images/bill+murray&#39;, listURLs); // true</co
 <p>A small visual&hellip; <code>any( flip(contains)(str), identity(listURLs) )</code> </p>
 
 <ul>
-<li><a href="https://wiki.haskell.org/Partial_application">partially apply</a> a <code>str</code> to a flipped<sup><sup id="fnref1"><a href="#fn1" rel="footnote">1</a></sup></sup> <code>contains</code> </li>
+<li><a href="https://wiki.haskell.org/Partial_application">partially apply</a> a <code>str</code> to a flipped <code>contains</code> <sup><sup id="fnref1"><a href="#fn1" rel="footnote">1</a></sup></sup> </li>
 <li>pass the given <code>listURLs</code> to <code>identity</code></li>
 <li>finally use those results as arguments to <code>any</code>.</li>
 </ul>
 
-<p>Confused? I know I was&hellip; </p>
+<p>It&rsquo;s still a bit hazy so lets break it down. </p>
 
-<p>Lets break it down. we will rebuild this function <code>useWith</code> using <code>zip</code> and you&rsquo;ll see why.</p>
+<p>To try to better understand the <code>useWith</code> function I decided to rebuild it using <code>zip</code> and you will see why in a moment.</p>
 
 <h3 id="toc_2">Zip Definition</h3>
 
-<p>A zip takes two lists and return a new list where the values of each list are now <strong>paired</strong> up.</p>
+<p>A zip takes two lists and returns a new list where the values of each list are now <strong>paired</strong> up.</p>
 
 <div><pre><code class="language-javascript">const pair = (fst, snd) =&gt; [fst, snd];
 const map = (fn, xs) =&gt; xs.map(fn);
 // simple helpers
 
 const zip = (xs, list) =&gt; map((x, idx) =&gt; pair(x, list[idx]), xs);
-// define a zip based on the above `map` &amp; `pair` functions
+//define a zip based on the above `map` &amp; `pair` functions
 
 zip([1, 2, 3], [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;]); //=&gt; [[1, &#39;a&#39;], [2, &#39;b&#39;], [3, &#39;c&#39;]]</code></pre></div>
 
 <p>So far pretty straightforward, moving on:</p>
 
-<div><pre><code class="language-javascript">const zipWith  = (fn, xs, arr) =&gt; map((x, i) =&gt; fn.apply(fn, pair([x, arr[i])), xs);
+<div><pre><code class="language-javascript">const zipWith  = (fn, xs, arr) =&gt; map((x, i) =&gt; fn.apply(fn, pair(x, arr[i])), xs);
 
 zipWith(f, [1, 2, 3], [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;]) // [f(1, &#39;a&#39;), f(2, &#39;b&#39;), f(3, &#39;c&#39;)]
 
@@ -537,10 +532,10 @@ zipWith((x, y) =&gt; [x, y], [1, 2, 3], [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])
 
 <p>Lets keep going!</p>
 
-<div><pre><code class="language-javascript">const inc = n =&gt; n + 1;
-const addTen = n =&gt; n + 10;
-const square = n =&gt; n * n;
-const invoke = (fn, values) =&gt; fn(values);
+<div><pre><code class="language-javascript">const inc = num =&gt; num + 1;
+const addTen = num =&gt; num + 10;
+const square = num =&gt; num * n;
+const invoke = (fn, ...args) =&gt; fn(...args);
 
 zipWith(invoke, [inc, addTen, square], [2, 4, 6])
 // =&gt; [3, 14, 36]
@@ -553,7 +548,7 @@ zipWith(invoke, [inc, addTen, square], [2, 4, 6])
 
 <p>Lets further expand on the above function:</p>
 
-<div><pre><code class="language-javascript">const max = xs =&gt; Math.max;
+<div><pre><code class="language-javascript">const max = Math.max;
 const zipThen = (after, xs, list) =&gt; after.apply(after, zipWith(invoke, xs, list));
 
 zipThen(max, [inc, addTen, square], [2, 4, 6]) //=&gt; 36
@@ -570,7 +565,7 @@ max(...[invoke(inc, 2), invoke(addTen, 4), invoke(square, 6)]) //=&gt; 36</code>
 
 zipThen(max, [inc, addTen, square], [2, 4, 6]) //=&gt; 36</code></pre></div>
 
-<p>The <a href="https://wiki.haskell.org/Type_signature">signatures</a> aren&rsquo;t identical but that shouldnt stop us!</p>
+<p>The <a href="https://wiki.haskell.org/Type_signature">signatures</a> aren&rsquo;t identical but that shouldn&rsquo;t stop us!</p>
 
 <p>Lets adjust the function definition:</p>
 
@@ -589,7 +584,7 @@ useWith(max, [inc, addTen, square])(2, 4, 6) //=&gt; 36</code></pre></div>
 <ol>
 
 <li id="fn1">
-<p>a fipped function simply means we have reversed it arguments from <code>contains(needle, haystack)</code> to <code>contains(haystack, needle)</code>&nbsp;<a href="#fnref1" rev="footnote">&#8617;</a></p>
+<p>a fipped function simply means we have reversed its arguments from <code>contains(needle, haystack)</code> to <code>contains(haystack, needle)</code>&nbsp;<a href="#fnref1" rev="footnote">&#8617;</a></p>
 </li>
 
 </ol>
