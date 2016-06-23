@@ -1,51 +1,200 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en-us">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta charset="UTF-8">
     <title>FP Notes by davidchase</title>
-
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/github-light.css">
-    <meta name="viewport" content="width=device-width">
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
   </head>
   <body>
-    <div class="wrapper">
-      <header>
-        <h1>FP Notes</h1>
-        <p>Experiments and Learnings in Functional Programming </p>
+    <section class="page-header">
+      <h1 class="project-name">FP Notes</h1>
+      <h2 class="project-tagline">Experiments and Learnings in Functional Programming </h2>
+      <a href="https://github.com/davidchase/fp-notes" class="btn">View on GitHub</a>
+      <a href="https://github.com/davidchase/fp-notes/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/davidchase/fp-notes/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
 
-        <p class="view"><a href="https://github.com/davidchase/fp-notes">View the Project on GitHub <small>davidchase/fp-notes</small></a></p>
-
-
-        <ul>
-          <li><a href="https://github.com/davidchase/fp-notes/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/davidchase/fp-notes/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/davidchase/fp-notes">View On <strong>GitHub</strong></a></li>
-        </ul>
-      </header>
-      <section>
-        <h1>
-<a id="fp-notes" class="anchor" href="#fp-notes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>fp-notes</h1>
+    <section class="main-content">
+      <h1>
+<a id="fp-notes" class="anchor" href="#fp-notes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>FP Notes</h1>
 
 <p>Experiments and Learnings in Functional Programming </p>
 
-<ol>
-<li><a href="https://rawgit.com/davidchase/fp-notes/master/short-cut-fusion.html">Short cut fusion</a></li>
+<ul>
+<li> <a href="https://rawgit.com/davidchase/fp-notes/master/short-cut-fusion.html">Short cut fusion</a> posted on  May 9, 2016</li>
+<li> <a href="https://rawgit.com/davidchase/fp-notes/master/zippers.html">Zippers</a> Implementing functions w/ zip posted on June 20, 2016 </li>
+</ul>
+
+<hr>
+
+<h2>
+<a id="zippers" class="anchor" href="#zippers" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Zippers</h2>
+
+<h3>
+<a id="backstory" class="anchor" href="#backstory" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Backstory</h3>
+
+<p>While working on a JavaScript application with a few colleagues using a great functional library called <a href="http://ramdajs.com/">Ramda</a>.</p>
+
+<p>We came across a function that was in need of a bit of refactoring.</p>
+
+<p><strong>NB</strong> The following code examples are written in concise es6 format.</p>
+
+<blockquote>
+<p>Original</p>
+</blockquote>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> {<span class="pl-c1">any</span>, <span class="pl-c1">contains</span>} <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>ramda<span class="pl-pds">'</span></span>);
+<span class="pl-k">const</span> <span class="pl-c1">listURLs</span> <span class="pl-k">=</span> [<span class="pl-s"><span class="pl-pds">'</span>http://google.com<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>http://ramdajs.com<span class="pl-pds">'</span></span>];
+<span class="pl-k">const</span> <span class="pl-c1">urlInList</span> <span class="pl-k">=</span> <span class="pl-smi">url</span> <span class="pl-k">=&gt;</span> <span class="pl-en">any</span>(<span class="pl-smi">val</span> <span class="pl-k">=&gt;</span> <span class="pl-en">contains</span>(val, url))(listURLs);
+
+<span class="pl-en">urlInList</span>(<span class="pl-s"><span class="pl-pds">'</span>http://google.com/images/bill+murray<span class="pl-pds">'</span></span>); <span class="pl-c">//true</span></pre></div>
+
+<p>The code simply checks if <code>any</code> provided URL string is contained within the given list of URL strings.</p>
+
+<p>So why refactor? Well, in the above definition we are focusing on the specific mechanics rather than composing functions together.</p>
+
+<p>High-level composition can promote a more compact and clear picture of what a function is going to do.</p>
+
+<p>Below in the refactored version, we do just that:</p>
+
+<blockquote>
+<p>Refactored</p>
+</blockquote>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> {<span class="pl-c1">any</span>, <span class="pl-c1">contains</span>, <span class="pl-c1">identity</span>, <span class="pl-c1">flip</span>, <span class="pl-c1">useWith</span>} <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>ramda<span class="pl-pds">'</span></span>);
+<span class="pl-k">const</span> <span class="pl-c1">listURLs</span> <span class="pl-k">=</span> [<span class="pl-s"><span class="pl-pds">'</span>http://google.com<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>http://ramdajs.com<span class="pl-pds">'</span></span>];
+<span class="pl-k">const</span> <span class="pl-c1">urlInList</span> <span class="pl-k">=</span> <span class="pl-en">useWith</span>(any, [<span class="pl-en">flip</span>(contains), identity]);
+
+<span class="pl-en">urlInList</span>(<span class="pl-s"><span class="pl-pds">'</span>http://google.com/images/bill+murray<span class="pl-pds">'</span></span>, listURLs); <span class="pl-c">//true</span></pre></div>
+
+<p>Can you spot the discrepancy?</p>
+
+<ul>
+<li>Other than new functions, there is no longer mention of <code>url</code> or <code>val</code> arguments in the function definition.</li>
 <li>
-<a href="https://rawgit.com/davidchase/fp-notes/master/zippers.html">Zipper</a> Fun w/ <code>zip</code>
+<code>listURLs</code> is no longer a <a href="https://wiki.haskell.org/Free_variable">free variable</a> since we pass it in as an argument.<br>
 </li>
-</ol>
-      </section>
-      <footer>
-        <p>This project is maintained by <a href="https://github.com/davidchase">davidchase</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+<li>
+<code>urlInList</code> is now a function that accepts two arguments: a string and a list of strings.</li>
+</ul>
+
+<p>The key function to take note of is <code>useWith</code>. Below is the definition from the <a href="http://ramdajs.com/docs/#useWith">source</a></p>
+
+<blockquote>
+<p>useWith: accepts a function fn and a list of transformer functions and returns a new curried function. When the new function is invoked, it calls the function fn with parameters consisting of the result of calling each supplied handler on successive arguments to the new function.</p>
+</blockquote>
+
+<p>A small visual... <code>any( flip(contains)(str), identity(listURLs) )</code> </p>
+
+<ul>
+<li>
+<a href="https://wiki.haskell.org/Partial_application">partially apply</a> a <code>str</code> to a flipped <code>contains</code> <sup>[^1]</sup> </li>
+<li>pass the given <code>listURLs</code> to <code>identity</code>
+</li>
+<li>finally use those results as arguments to <code>any</code>.</li>
+</ul>
+
+<p>It's still a bit hazy so lets break it down. </p>
+
+<p>To try to better understand the <code>useWith</code> function I decided to rebuild it using <code>zip</code> and you will see why in a moment.</p>
+
+<h3>
+<a id="zip-definition" class="anchor" href="#zip-definition" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Zip Definition</h3>
+
+<p>A zip takes two lists and returns a new list where the values of each list are now <strong>paired</strong> up.</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">pair</span> <span class="pl-k">=</span> (<span class="pl-smi">fst</span>, <span class="pl-smi">snd</span>) <span class="pl-k">=&gt;</span> [fst, snd];
+<span class="pl-k">const</span> <span class="pl-c1">map</span> <span class="pl-k">=</span> (<span class="pl-smi">fn</span>, <span class="pl-smi">xs</span>) <span class="pl-k">=&gt;</span> <span class="pl-smi">xs</span>.<span class="pl-en">map</span>(fn);
+<span class="pl-c">// simple helpers</span>
+
+<span class="pl-k">const</span> <span class="pl-c1">zip</span> <span class="pl-k">=</span> (<span class="pl-smi">xs</span>, <span class="pl-smi">list</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">map</span>((<span class="pl-smi">x</span>, <span class="pl-smi">idx</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">pair</span>(x, list[idx]), xs);
+<span class="pl-c">//define a zip based on the above `map` &amp; `pair` functions</span>
+
+<span class="pl-en">zip</span>([<span class="pl-c1">1</span>, <span class="pl-c1">2</span>, <span class="pl-c1">3</span>], [<span class="pl-s"><span class="pl-pds">'</span>a<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>c<span class="pl-pds">'</span></span>]); <span class="pl-c">//=&gt; [[1, 'a'], [2, 'b'], [3, 'c']]</span></pre></div>
+
+<p>So far pretty straightforward, moving on:</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">zipWith</span>  <span class="pl-k">=</span> (<span class="pl-smi">fn</span>, <span class="pl-smi">xs</span>, <span class="pl-smi">arr</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">map</span>((<span class="pl-smi">x</span>, <span class="pl-smi">i</span>) <span class="pl-k">=&gt;</span> <span class="pl-smi">fn</span>.<span class="pl-c1">apply</span>(fn, <span class="pl-en">pair</span>(x, arr[i])), xs);
+
+<span class="pl-en">zipWith</span>(f, [<span class="pl-c1">1</span>, <span class="pl-c1">2</span>, <span class="pl-c1">3</span>], [<span class="pl-s"><span class="pl-pds">'</span>a<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>c<span class="pl-pds">'</span></span>]) <span class="pl-c">// [f(1, 'a'), f(2, 'b'), f(3, 'c')]</span>
+
+<span class="pl-en">zipWith</span>((<span class="pl-smi">x</span>, <span class="pl-smi">y</span>) <span class="pl-k">=&gt;</span> [x, y], [<span class="pl-c1">1</span>, <span class="pl-c1">2</span>, <span class="pl-c1">3</span>], [<span class="pl-s"><span class="pl-pds">'</span>a<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>c<span class="pl-pds">'</span></span>]) 
+<span class="pl-c">// = zip([1, 2, 3], ['a', 'b', 'c']) =&gt; [[1, 'a'], [2, 'b'], [3, 'c']]</span></pre></div>
+
+<h3>
+<a id="what-do-we-have-so-far" class="anchor" href="#what-do-we-have-so-far" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>What do we have so far?</h3>
+
+<ul>
+<li>using <code>map</code> we build <code>zip</code> which takes two lists and pairs them up.</li>
+<li>next we have <code>zipWith</code> that takes an additional argument: a function which gets called with both lists values.</li>
+<li>finally we can also derive <code>zip</code> from <code>zipWith</code> shown above.</li>
+</ul>
+
+<p>Lets keep going!</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">inc</span> <span class="pl-k">=</span> <span class="pl-smi">num</span> <span class="pl-k">=&gt;</span> num <span class="pl-k">+</span> <span class="pl-c1">1</span>;
+<span class="pl-k">const</span> <span class="pl-c1">addTen</span> <span class="pl-k">=</span> <span class="pl-smi">num</span> <span class="pl-k">=&gt;</span> num <span class="pl-k">+</span> <span class="pl-c1">10</span>;
+<span class="pl-k">const</span> <span class="pl-c1">square</span> <span class="pl-k">=</span> <span class="pl-smi">num</span> <span class="pl-k">=&gt;</span> num <span class="pl-k">*</span> n;
+<span class="pl-k">const</span> <span class="pl-c1">invoke</span> <span class="pl-k">=</span> (<span class="pl-smi">fn</span>, <span class="pl-k">...</span><span class="pl-v">args</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">fn</span>(<span class="pl-k">...</span>args);
+
+<span class="pl-en">zipWith</span>(invoke, [inc, addTen, square], [<span class="pl-c1">2</span>, <span class="pl-c1">4</span>, <span class="pl-c1">6</span>])
+<span class="pl-c">// =&gt; [3, 14, 36]</span>
+
+[<span class="pl-en">invoke</span>(inc, <span class="pl-c1">2</span>), <span class="pl-en">invoke</span>(addTen, <span class="pl-c1">4</span>), <span class="pl-en">invoke</span>(square, <span class="pl-c1">6</span>)] <span class="pl-c">//=&gt; [3, 14, 36]</span></pre></div>
+
+<p>Here we are simply zipping a list of functions with a list of values.</p>
+
+<p>The pair of functions and values get passed as arguments to <code>invoke</code>.</p>
+
+<p>Lets further expand on the above function:</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">max</span> <span class="pl-k">=</span> <span class="pl-c1">Math</span>.<span class="pl-smi">max</span>;
+<span class="pl-k">const</span> <span class="pl-c1">zipThen</span> <span class="pl-k">=</span> (<span class="pl-smi">after</span>, <span class="pl-smi">xs</span>, <span class="pl-smi">list</span>) <span class="pl-k">=&gt;</span> <span class="pl-smi">after</span>.<span class="pl-c1">apply</span>(after, <span class="pl-en">zipWith</span>(invoke, xs, list));
+
+<span class="pl-en">zipThen</span>(max, [inc, addTen, square], [<span class="pl-c1">2</span>, <span class="pl-c1">4</span>, <span class="pl-c1">6</span>]) <span class="pl-c">//=&gt; 36</span>
+
+<span class="pl-en">max</span>(<span class="pl-k">...</span>[<span class="pl-en">invoke</span>(inc, <span class="pl-c1">2</span>), <span class="pl-en">invoke</span>(addTen, <span class="pl-c1">4</span>), <span class="pl-en">invoke</span>(square, <span class="pl-c1">6</span>)]) <span class="pl-c">//=&gt; 36</span></pre></div>
+
+<p>We took our <code>zipWith(invoke)</code> and added a function to be called afterwards.</p>
+
+<p>So 1st we <code>zip</code> list of functions with list of values and <code>then</code> we call <code>max</code> on the resulting list.</p>
+
+<h3>
+<a id="flashback-time" class="anchor" href="#flashback-time" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Flashback Time</h3>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-en">useWith</span>(max, [inc, addTen, square])(<span class="pl-c1">2</span>, <span class="pl-c1">4</span>, <span class="pl-c1">6</span>) <span class="pl-c">//=&gt; 36</span>
+
+<span class="pl-en">zipThen</span>(max, [inc, addTen, square], [<span class="pl-c1">2</span>, <span class="pl-c1">4</span>, <span class="pl-c1">6</span>]) <span class="pl-c">//=&gt; 36</span></pre></div>
+
+<p>The <a href="https://wiki.haskell.org/Type_signature">signatures</a> aren't identical but that shouldn't stop us!</p>
+
+<p>Lets adjust the function definition:</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">zipThen</span> <span class="pl-k">=</span> (<span class="pl-smi">after</span>, <span class="pl-smi">xs</span>) <span class="pl-k">=&gt;</span> (<span class="pl-k">...</span><span class="pl-v">list</span>) <span class="pl-k">=&gt;</span> <span class="pl-smi">after</span>.<span class="pl-c1">apply</span>(after, <span class="pl-en">zipWith</span>(invoke, xs, list));
+
+<span class="pl-en">zipThen</span>(max, [inc, addTen, square])(<span class="pl-c1">2</span>, <span class="pl-c1">4</span>, <span class="pl-c1">6</span>) <span class="pl-c">//=&gt; 36</span>
+
+<span class="pl-en">useWith</span>(max, [inc, addTen, square])(<span class="pl-c1">2</span>, <span class="pl-c1">4</span>, <span class="pl-c1">6</span>) <span class="pl-c">//=&gt; 36</span></pre></div>
+
+<p>I don't know about you guys but I kinda like <code>zipThen</code> feels a bit more descriptive. ;)</p>
+
+<h3>
+<a id="footnotes" class="anchor" href="#footnotes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Footnotes</h3>
+
+<p>[^1]: a fipped function simply means we have reversed its arguments from <code>contains(needle, haystack)</code> to <code>contains(haystack, needle)</code></p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/davidchase/fp-notes">FP Notes</a> is maintained by <a href="https://github.com/davidchase">davidchase</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
       </footer>
-    </div>
-    <script src="javascripts/scale.fix.js"></script>
-    
+
+    </section>
+
+  
   </body>
 </html>
