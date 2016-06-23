@@ -1,0 +1,6 @@
+{
+  "name": "Fp-notes",
+  "tagline": "Experiments and Learnings in Functional Programming ",
+  "body": "# fp-notes\r\nExperiments and Learnings in Functional Programming \r\n\r\n1. [Short cut fusion](https://rawgit.com/davidchase/fp-notes/master/short-cut-fusion.html)\r\n2. [Zipper] (https://rawgit.com/davidchase/fp-notes/master/zippers.html) Fun w/ `zip`\r\n",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
