@@ -25,7 +25,7 @@
 <p>Experiments and Learnings in Functional Programming </p>
 
 <ul>
-<li> <a href="https://rawgit.com/davidchase/fp-notes/master/short-cut-fusion.html">Short cut fusion</a> posted on  May 9, 2016</li>
+<li> <a href="#short-cut-fusion">Short cut fusion</a> posted on  May 9, 2016</li>
 <li> <a href="#zippers">Zippers</a> Implementing functions w/ zip posted on June 20, 2016 </li>
 </ul>
 
@@ -186,6 +186,114 @@
 <a id="footnotes" class="anchor" href="#footnotes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Footnotes</h3>
 
 <p>[^1]: a fipped function simply means we have reversed its arguments from <code>contains(needle, haystack)</code> to <code>contains(haystack, needle)</code></p>
+
+<hr>
+
+<h2>
+<a id="short-cut-fusion" class="anchor" href="#short-cut-fusion" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Short cut fusion</h2>
+
+<blockquote>
+<p>Optimization techinque that allows for removal of intermediate data structures. <sup><a href="https://wiki.haskell.org/Short_cut_fusion">1</a></sup></p>
+</blockquote>
+
+<h5>
+<a id="simple-example" class="anchor" href="#simple-example" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Simple Example:</h5>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">list</span> <span class="pl-k">=</span> [<span class="pl-c1">1</span>,<span class="pl-c1">2</span>,<span class="pl-c1">3</span>,<span class="pl-c1">4</span>];
+
+
+<span class="pl-c">//|- [12, 18, 24, 30] &lt;-- [4, 6, 8, 10] &lt;-- [2, 3, 4, 5] &lt;-- [1, 2, 3, 4]</span>
+<span class="pl-k">const</span> <span class="pl-c1">f</span> <span class="pl-k">=</span> <span class="pl-en">compose</span>(<span class="pl-en">map</span>(triple), <span class="pl-en">map</span>(double), <span class="pl-en">map</span>(inc));
+
+<span class="pl-en">f</span>(list); <span class="pl-c">// [12, 18, 24, 30]</span></pre></div>
+
+<p>The above example is pretty straightforward we call <code>inc</code>, <code>double</code> and then <code>triple</code> on the 
+given data <code>list</code>. For each of those function calls <code>map</code> creates a new list and passes it on
+to the next <code>map(f)</code>. Seems a bit wasteful :(</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-c">//|- [12, 18, 24, 30] &lt;------------------ [1, 2, 3, 4]</span>
+<span class="pl-k">const</span> ƒ <span class="pl-k">=</span> <span class="pl-en">map</span>(<span class="pl-en">compose</span>(triple, double, inc));
+
+ƒ(list); <span class="pl-c">// [12, 18, 24, 30]</span></pre></div>
+
+<p>Some what subtle but greatly beneficial improvement is to <code>compose</code> the functions provided to <code>map</code>
+and then call <code>map</code> on the result of that accumulation. The result is the same, however instead of mapping 3x
+over the same list it happens once. Therefore no unnecessary data structures created between the 1st function
+call and the last.</p>
+
+<h5>
+<a id="more-involved-example" class="anchor" href="#more-involved-example" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>More Involved Example:</h5>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">list</span> <span class="pl-k">=</span> <span class="pl-en">range</span>(<span class="pl-c1">1</span>, <span class="pl-c1">10</span>);
+
+<span class="pl-k">const</span> <span class="pl-c1">f</span> <span class="pl-k">=</span> <span class="pl-en">compose</span>(<span class="pl-en">map</span>(inc), <span class="pl-en">filter</span>(odd), <span class="pl-en">take</span>(<span class="pl-c1">3</span>)); <span class="pl-c">// [3, 5, 7]</span></pre></div>
+
+<p>Looks very similar to 1st example, given a list we </p>
+
+<ul>
+<li>
+<code>take</code> 3 values</li>
+<li>
+<code>filter</code> out the odd ones</li>
+<li>
+<code>map</code> to increment all of those values by 1</li>
+</ul>
+
+<p>This again suffers from creating gratuitous lists in between the 1st and last function call.</p>
+
+<p>Ideally we would like to achieve a <code>composition</code> of those functions <code>take</code>, <code>filter</code> and <code>map</code> and
+only "loop" through the data structure once.</p>
+
+<p>Unfortunately due to the different function signatures, in their current form you cannot <code>compose</code> them together. IOW because <code>map</code> takes a function, <code>filter</code> takes a predicate function and <code>take</code> expects a number you cannot build a single function to accomdate all of those cases...</p>
+
+<p>However if we re-define those functions in terms of something like <code>reduce</code> we may achieve the results
+we want.</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">map</span>ƒ <span class="pl-k">=</span> (<span class="pl-smi">fn</span>, <span class="pl-smi">xs</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">reduce</span>((<span class="pl-smi">acc</span>, <span class="pl-smi">input</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">concat</span>(acc, <span class="pl-en">fn</span>(input)), [], xs);
+<span class="pl-k">const</span> <span class="pl-c1">filter</span>ƒ <span class="pl-k">=</span> (<span class="pl-smi">pred</span>, <span class="pl-smi">xs</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">reduce</span>((<span class="pl-smi">acc</span>, <span class="pl-smi">input</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">pred</span>(input) <span class="pl-k">?</span> <span class="pl-en">concat</span>(acc, <span class="pl-en">pred</span>(input)) <span class="pl-k">:</span> acc, [], xs);
+<span class="pl-k">const</span> <span class="pl-c1">take</span>ƒ <span class="pl-k">=</span> (<span class="pl-smi">n</span>, <span class="pl-smi">xs</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">reduce</span>((<span class="pl-smi">acc</span>, <span class="pl-smi">input</span>) <span class="pl-k">=&gt;</span> <span class="pl-smi">acc</span>.<span class="pl-c1">length</span> <span class="pl-k">!==</span> n <span class="pl-k">?</span> <span class="pl-en">concat</span>(acc, input) <span class="pl-k">:</span> acc, [], xs);</pre></div>
+
+<p>This 1st pass shows that we are internally dependent on <code>reduce</code> and <code>concat</code> which we use to accumulate the values. This current situation does not allow us to be flexible in our usage of these new functions. IOW we cannot start with a list of values and return a single value ie: <code>[1,2,3,4] =&gt; 10</code> </p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">map</span>ƒ <span class="pl-k">=</span> (<span class="pl-smi">fn</span>, <span class="pl-smi">combineFn</span>) <span class="pl-k">=&gt;</span> (<span class="pl-smi">acc</span>, <span class="pl-smi">input</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">combineFn</span>(acc, <span class="pl-en">fn</span>(input));
+<span class="pl-k">const</span> <span class="pl-c1">filter</span>ƒ <span class="pl-k">=</span> (<span class="pl-smi">pred</span>, <span class="pl-smi">combineFn</span>) <span class="pl-k">=&gt;</span> (<span class="pl-smi">acc</span>, <span class="pl-smi">input</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">pred</span>(input) <span class="pl-k">?</span> <span class="pl-en">combineFn</span>(acc, input) <span class="pl-k">:</span> acc;
+<span class="pl-k">const</span> <span class="pl-c1">take</span>ƒ <span class="pl-k">=</span> (<span class="pl-smi">n</span>, <span class="pl-smi">combineFn</span>) <span class="pl-k">=&gt;</span> (<span class="pl-smi">acc</span>, <span class="pl-smi">input</span>) <span class="pl-k">=&gt;</span> <span class="pl-smi">acc</span>.<span class="pl-c1">length</span> <span class="pl-k">!==</span> n <span class="pl-k">?</span> <span class="pl-en">combineFn</span>(acc, input) <span class="pl-k">:</span> acc;
+</pre></div>
+
+<p>In this 2nd attempt we have removed the dependency on a internal <code>reduce</code> function as well as a way to accumulate the values. It is now an argument called <code>combineFn</code>. So now we have 3 new functions that
+have a way to accumulate values and a reducing function with the signature <code>(acc, input)</code> which is the same as the 1st argument to reduce.</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-en">reduce</span>(mapƒ(<span class="pl-en">add</span>(<span class="pl-c1">10</span>), concat), [], <span class="pl-en">range</span>(<span class="pl-c1">1</span>, <span class="pl-c1">5</span>)); <span class="pl-c">// [11, 12, 13, 14]</span></pre></div>
+
+<p>Above we have a typical usage of the newly created <code>mapβ</code> using <code>concat</code> as the <code>combineFn</code></p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-en">reduce</span>(mapƒ(inc, add), <span class="pl-c1">0</span>, <span class="pl-en">range</span>(<span class="pl-c1">1</span>, <span class="pl-c1">5</span>)); <span class="pl-c">// 14</span></pre></div>
+
+<p>In this example we use <code>add</code> as the accumulator (combineFn).</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-en">reduce</span>(mapƒ(inc, filterƒ(odd, takeƒ(<span class="pl-c1">3</span>, concat))), [], <span class="pl-en">range</span>(<span class="pl-c1">1</span>, <span class="pl-c1">10</span>)); <span class="pl-c">// [3, 5, 7]</span></pre></div>
+
+<p>Finally we can create a function "composition" with all of the new functions as well as a way to accumulate values. We get the same results as the example at the beginning of this section... but with a single "loop" and no intermediate data structures</p>
+
+<p><em>Bonus:</em></p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">const</span> <span class="pl-c1">map</span>ƒ <span class="pl-k">=</span> <span class="pl-en">curryN</span>(<span class="pl-c1">2</span>, (<span class="pl-smi">fn</span>, <span class="pl-smi">combineFn</span>) <span class="pl-k">=&gt;</span> (<span class="pl-smi">acc</span>, <span class="pl-smi">input</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">combineFn</span>(acc, <span class="pl-en">fn</span>(input)));
+<span class="pl-k">const</span> <span class="pl-c1">filter</span>ƒ <span class="pl-k">=</span> <span class="pl-en">curryN</span>(<span class="pl-c1">2</span>, (<span class="pl-smi">pred</span>, <span class="pl-smi">combineFn</span>) <span class="pl-k">=&gt;</span> (<span class="pl-smi">acc</span>, <span class="pl-smi">input</span>) <span class="pl-k">=&gt;</span> <span class="pl-en">pred</span>(input) <span class="pl-k">?</span> <span class="pl-en">combineFn</span>(acc, input) <span class="pl-k">:</span> acc);
+<span class="pl-k">const</span> <span class="pl-c1">take</span>ƒ <span class="pl-k">=</span> <span class="pl-en">curryN</span>(<span class="pl-c1">2</span>, (<span class="pl-smi">n</span>, <span class="pl-smi">combineFn</span>) <span class="pl-k">=&gt;</span> (<span class="pl-smi">acc</span>, <span class="pl-smi">input</span>) <span class="pl-k">=&gt;</span> <span class="pl-smi">acc</span>.<span class="pl-c1">length</span> <span class="pl-k">!==</span> n <span class="pl-k">?</span> <span class="pl-en">combineFn</span>(acc, input) <span class="pl-k">:</span> acc);
+
+<span class="pl-k">const</span> ƒ <span class="pl-k">=</span> <span class="pl-en">compose</span>(mapƒ(inc), filterƒ(<span class="pl-smi">x</span> <span class="pl-k">=&gt;</span> x <span class="pl-k">%</span> <span class="pl-c1">2</span> <span class="pl-k">!==</span> <span class="pl-c1">0</span>), takeƒ(<span class="pl-c1">3</span>));
+
+<span class="pl-en">reduce</span>(ƒ(concat), [], <span class="pl-en">range</span>(<span class="pl-c1">1</span>, <span class="pl-c1">10</span>)) <span class="pl-c">// [3, 5, 7]</span></pre></div>
+
+<p>As a bonus using <code>curryN</code> and <code>compose</code> from a library like <a href="http://ramdajs.com">ramda</a>. We can create nice reusable compositions for our <code>reduce</code> function. <strong>NB</strong> typical composition is right-left but in our case the functions get applied left-right (map gets called 1st).</p>
+
+<h4>
+<a id="references" class="anchor" href="#references" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>References</h4>
+
+<ul>
+<li><a href="https://wiki.haskell.org/Short_cut_fusion">https://wiki.haskell.org/Short_cut_fusion</a></li>
+<li><a href="http://www.slideshare.net/drboolean/millionways">http://www.slideshare.net/drboolean/millionways</a></li>
+</ul>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/davidchase/fp-notes">FP Notes</a> is maintained by <a href="https://github.com/davidchase">davidchase</a>.</span>
