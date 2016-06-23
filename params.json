@@ -1,6 +1,6 @@
 {
   "name": "FP Notes",
   "tagline": "Experiments and Learnings in Functional Programming ",
-  "body": "# FP Notes\r\nExperiments and Learnings in Functional Programming \r\n\r\n-  [Short cut fusion](https://rawgit.com/davidchase/fp-notes/master/zippers.html) posted on  May 9, 2016\r\n-  [Zippers] (https://rawgit.com/davidchase/fp-notes/master/short-cut-fusion.html) Implementing functions w/ zip posted on June 20, 2016 \r\n\r\n\r\n***\r\n\r\n## Zippers\r\n\r\n### Backstory\r\nWhile working on a JavaScript application with a few colleagues using a great functional library called [Ramda](http://ramdajs.com/).\r\n\r\nWe came across a function that was in need of a bit of refactoring.\r\n\r\n**NB** The following code examples are written in concise es6 format.\r\n\r\n[Read More](https://rawgit.com/davidchase/fp-notes/master/zippers.html) \r\n\r\n***\r\n\r\n## Short cut fusion\r\n> Optimization techinque that allows for removal of intermediate data structures. <sup>[1]</sup>\r\n\r\n[Read More] (https://rawgit.com/davidchase/fp-notes/master/short-cut-fusion.html)",
+  "body": "# FP Notes\r\nExperiments and Learnings in Functional Programming \r\n\r\n-  [Folders](https://rawgit.com/davidchase/fp-notes/master/zippers.html) Short-cut fusion w/ reduce posted on  May 9, 2016\r\n-  [Zippers] (https://rawgit.com/davidchase/fp-notes/master/short-cut-fusion.html) Implementing functions w/ zip posted on June 20, 2016 ",
   "note": "Don't delete this file! It's used internally to help with page regeneration."
 }
